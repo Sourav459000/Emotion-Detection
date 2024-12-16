@@ -1,23 +1,31 @@
-# Base image from NVIDIA L4T for Jetson with TensorFlow and OpenCV
-FROM nvcr.io/nvidia/l4t-tensorflow:r32.7.1-tf2.5-py3
+# Use the official Python base image
+FROM python:3.10-slim
 
-# Set the working directory
-WORKDIR /emotion_detection
+# Set the working directory inside the container
+WORKDIR /Emotion-Detection
 
-# Copy the entire project into the container
-COPY . /emotion_detection
+# Install system dependencies for OpenCV (and other required libraries)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libopencv-dev \
+    libopencv-contrib-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install additional system dependencies
-RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# Upgrade pip
+RUN pip install --upgrade pip
 
-# Install additional Python dependencies (if needed)
-RUN pip install --no-cache-dir numpy
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    numpy \
+    opencv-python-headless \
+    opencv-contrib-python \
+    matplotlib \
+    tensorflow==2.12.0  # Version supported for ARM
 
-# Expose a port for debugging or APIs (optional)
-EXPOSE 8080
+# Expose the display (for webcam usage, if needed)
+ENV DISPLAY=:0
 
-# Set the default command to run your live detection script
-CMD ["python3", "live.py"]
+# Copy all the necessary files from the host to the container
+COPY . /Emotion-Detection
+
+# Command to run the live emotion detection script
+CMD ["python", "live.py"]
